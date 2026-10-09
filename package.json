@@ -16,6 +16,7 @@
     "appId": "com.karin.browser",
     "productName": "Karin Browser",
     "win": {
+      "icon": "karin441.ico",
       "target": ["nsis", "portable"]
     },
     "nsis": {
