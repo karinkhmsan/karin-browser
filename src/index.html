@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Karin Browser</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            karin: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              accent: '#8b5cf6',
+              dark: '#0f172a',
+              surface: '#1e293b',
+              surfaceLight: '#334155'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(140, 140, 160, 0.35); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(140, 140, 160, 0.55); }
+
+    .karin-tab { transition: all 0.15s ease-in-out; user-select: none; }
+    .karin-tab.active {
+      background-color: #1e293b;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+    html:not(.dark) .karin-tab.active {
+      background-color: #ffffff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes progressPulse {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(20%); }
+      100% { transform: translateX(100%); }
+    }
+    .animate-progress { animation: progressPulse 1.2s infinite ease-in-out; }
+
+    /* Webview display control */
+    webview { width: 100%; height: 100%; display: none; }
+    webview.active { display: flex; }
+
+    /* Drag window bar */
+    .drag-region { -webkit-app-region: drag; }
+    .no-drag { -webkit-app-region: no-drag; }
+  </style>
+</head>
+
+<body class="h-full flex flex-col bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 select-none overflow-hidden font-sans">
+
+  <!-- Top Window / Tab Bar Strip -->
+  <header class="bg-slate-200 dark:bg-slate-950 pt-2 px-2 border-b border-slate-300 dark:border-slate-800 flex items-center justify-between gap-2 z-20 drag-region">
+    <!-- Tabs Container -->
+    <div class="flex items-end gap-1 flex-1 overflow-x-auto no-drag" id="tabBar"></div>
+
+    <!-- New Tab & Window Controls -->
+    <div class="flex items-center gap-1.5 pb-1.5 pr-1 no-drag">
+      <button id="btnNewTab" title="New Tab (Ctrl+T)" class="p-1.5 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+        <i class="fa-solid fa-plus text-xs"></i>
+      </button>
+      <div class="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1"></div>
+      <button id="btnWindowMin" title="Minimize" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-300 dark:hover:bg-slate-800 text-slate-500">
+        <i class="fa-solid fa-minus text-[10px]"></i>
+      </button>
+      <button id="btnWindowMax" title="Maximize" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-slate-300 dark:hover:bg-slate-800 text-slate-500">
+        <i class="fa-regular fa-square text-[10px]"></i>
+      </button>
+      <button id="btnWindowClose" title="Close" class="w-7 h-7 flex items-center justify-center rounded-md hover:bg-red-500 hover:text-white text-slate-500 transition">
+        <i class="fa-solid fa-xmark text-[11px]"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Navigation / Omnibox Bar -->
+  <section class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 py-1.5 flex items-center gap-2 relative z-10 shadow-sm no-drag">
+    <!-- Nav controls -->
+    <div class="flex items-center gap-1">
+      <button id="btnBack" title="Click to go back" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-35 transition">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+      </button>
+      <button id="btnForward" title="Click to go forward" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 disabled:opacity-35 transition">
+        <i class="fa-solid fa-arrow-right text-xs"></i>
+      </button>
+      <button id="btnReload" title="Reload (Ctrl+R)" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+        <i id="reloadIcon" class="fa-solid fa-rotate-right text-xs"></i>
+      </button>
+      <button id="btnHome" title="Karin Home Page" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition">
+        <i class="fa-solid fa-house text-xs"></i>
+      </button>
+    </div>
+
+    <!-- Omnibox / URL Bar -->
+    <div class="flex-1 relative flex items-center">
+      <form id="omniboxForm" class="w-full flex items-center bg-slate-100 dark:bg-slate-800/80 rounded-full border border-slate-200 dark:border-slate-700/80 focus-within:border-karin-500 focus-within:ring-2 focus-within:ring-karin-500/20 px-3 py-1 text-xs transition">
+        <!-- Security Badge -->
+        <div id="securityBadge" class="flex items-center gap-1.5 text-karin-500 mr-2 cursor-pointer font-medium" title="Karin Security Status">
+          <i id="securityIcon" class="fa-solid fa-shield-halved text-[11px]"></i>
+          <span id="securityText" class="hidden sm:inline-block text-[11px]">Karin System</span>
+        </div>
+
+        <!-- Input Field -->
+        <input 
+          id="urlInput" 
+          type="text" 
+          placeholder="Search with Google or enter URL (e.g. karin://start, https://example.com)" 
+          autocomplete="off"
+          spellcheck="false"
+          class="flex-1 bg-transparent border-none outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 text-xs py-0.5"
+        />
+
+        <!-- Star / Bookmark Button -->
+        <button type="button" id="btnBookmarkStar" title="Bookmark this tab" class="p-1 text-slate-400 hover:text-amber-500 transition">
+          <i id="bookmarkStarIcon" class="fa-regular fa-star text-xs"></i>
+        </button>
+      </form>
+
+      <!-- Loading Bar Progress Indicator -->
+      <div id="progressBar" class="hidden absolute -bottom-1.5 left-2 right-2 h-0.5 bg-slate-200 dark:bg-slate-800 overflow-hidden rounded-full">
+        <div class="h-full bg-gradient-to-r from-karin-500 to-indigo-500 w-1/3 animate-progress"></div>
+      </div>
+    </div>
+
+    <!-- Actions & Extensions -->
+    <div class="flex items-center gap-1">
+      <button id="btnToggleDevTools" title="Developer Tools (F12)" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <i class="fa-solid fa-terminal text-xs"></i>
+      </button>
+      <button id="btnToggleBookmarks" title="Toggle Bookmarks Bar" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <i class="fa-solid fa-bookmark text-xs"></i>
+      </button>
+      <button id="btnThemeToggle" title="Toggle Theme" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+        <i id="themeIcon" class="fa-solid fa-sun text-xs text-amber-400"></i>
+      </button>
+      
+      <!-- Menu Dropdown -->
+      <div class="relative">
+        <button id="btnBrowserMenu" title="Menu" class="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <i class="fa-solid fa-ellipsis-vertical text-xs"></i>
+        </button>
+        <div id="browserDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-2 z-50 text-xs">
+          <div class="px-4 py-2 border-b border-slate-100 dark:border-slate-700/60">
+            <p class="font-semibold text-slate-800 dark:text-white">Karin Browser</p>
+            <p class="text-[10px] text-slate-400">Lightweight Desktop Edition</p>
+          </div>
+          <button id="menuItemNewTab" class="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-between">
+            <span><i class="fa-solid fa-plus w-4 mr-2 text-slate-400"></i> New Tab</span>
+            <span class="text-[10px] text-slate-400">Ctrl+T</span>
+          </button>
+          <button id="menuItemHistory" class="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-between">
+            <span><i class="fa-solid fa-clock-rotate-left w-4 mr-2 text-slate-400"></i> History</span>
+          </button>
+          <button id="menuItemDevTools" class="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-between">
+            <span><i class="fa-solid fa-code w-4 mr-2 text-slate-400"></i> Inspect Element</span>
+            <span class="text-[10px] text-slate-400">F12</span>
+          </button>
+          <button id="menuItemSettings" class="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-between">
+            <span><i class="fa-solid fa-gear w-4 mr-2 text-slate-400"></i> Settings</span>
+          </button>
+          <div class="border-t border-slate-100 dark:border-slate-700/60 my-1"></div>
+          <button id="menuItemAbout" class="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center">
+            <i class="fa-solid fa-circle-info w-4 mr-2 text-slate-400"></i> About Karin
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Bookmarks Bar -->
+  <section id="bookmarksBar" class="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200/80 dark:border-slate-800/80 px-4 py-1 flex items-center gap-2 overflow-x-auto text-xs text-slate-600 dark:text-slate-300">
+    <div id="quickBookmarksList" class="flex items-center gap-1.5 flex-1"></div>
+    <div class="text-[11px] text-slate-400 font-mono flex items-center gap-1">
+      <i class="fa-solid fa-microchip text-karin-500"></i>
+      <span id="memUsage">RAM: 56 MB</span>
+    </div>
+  </section>
+
+  <!-- Main Viewport Area -->
+  <main id="viewportContainer" class="flex-1 relative overflow-hidden bg-slate-50 dark:bg-slate-950 flex flex-col">
+    <!-- Built-in Start Page (แสดงเมื่อเปิด karin://start) -->
+    <div id="startPageView" class="w-full h-full overflow-y-auto"></div>
+
+    <!-- Webview Pool (สำหรับหน้าเว็บจริงที่เข้าใช้งาน) -->
+    <div id="webviewsContainer" class="w-full h-full relative"></div>
+  </main>
+
+  <!-- Global Modal: History & Settings & About -->
+  <div id="globalModal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[80vh]">
+      <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+          <i id="modalIcon" class="fa-solid fa-clock-rotate-left text-karin-500"></i>
+          <span>History</span>
+        </h3>
+        <button id="btnModalClose" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+      <div id="modalBody" class="p-4 overflow-y-auto flex-1 space-y-2 text-xs"></div>
+      <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-2">
+        <button id="btnModalAction" class="px-3 py-1.5 rounded-lg bg-karin-500 text-white font-medium hover:bg-karin-600 transition">
+          ตกลง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

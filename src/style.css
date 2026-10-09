@@ -1,0 +1,82 @@
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --accent: #38bdf8;
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+  --border-color: #334155;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+body { background: var(--bg-primary); color: var(--text-main); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* Tabs Bar */
+.browser-chrome {
+  display: flex;
+  align-items: center;
+  background: var(--bg-primary);
+  padding: 6px 12px 0 12px;
+  -webkit-app-region: drag; /* ลากหน้าต่างได้ */
+}
+.tabs-container { display: flex; gap: 4px; overflow-x: auto; flex: 1; -webkit-app-region: no-drag; }
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #182234;
+  padding: 8px 14px;
+  border-radius: 8px 8px 0 0;
+  font-size: 12px;
+  max-width: 200px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+}
+.tab.active { background: var(--bg-secondary); border-color: var(--border-color); border-bottom-color: transparent; }
+.tab .tab-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tab .tab-close { opacity: 0.6; cursor: pointer; border-radius: 50%; padding: 2px 4px; }
+.tab .tab-close:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-secondary);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  -webkit-app-region: no-drag;
+}
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.icon-btn:hover { background: #334155; color: var(--text-main); }
+.omnibox-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  background: #0b1120;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 4px 10px;
+  gap: 8px;
+}
+.omnibox-wrapper input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+/* Webview Container */
+.views-wrapper { flex: 1; position: relative; background: #000; }
+webview { width: 100%; height: 100%; display: none; }
+webview.active { display: flex; }
